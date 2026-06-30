@@ -155,6 +155,15 @@ padding:11px 14px;background:rgba(255,255,255,.92);backdrop-filter:blur(18px);-w
 @media(max-width:860px){.desk-actions{display:none}}
 @media print{.app,.actionbar,.overlay,.topbar,.bottomnav,.sidebar{display:none!important}body{background:#fff}
 #print-invoice{position:static!important;left:auto!important;width:auto!important}.pi{padding:0}@page{size:A4;margin:13mm}}
+
+.listrow{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;background:none;border:0;text-align:left;padding:13px 12px;border-radius:12px;color:var(--ink);border-bottom:1px solid var(--line)}
+.listrow:last-child{border-bottom:0}.listrow:active{background:var(--limestone)}
+.lr-main{min-width:0}.lr-t{font-weight:700;font-size:15px}.lr-s{font-size:12.5px;color:var(--mut);margin-top:2px}
+.lr-r{text-align:right;flex:0 0 auto}.lr-amt{font-weight:800;font-variant-numeric:tabular-nums}
+.lr-del{font-size:11px;color:#c0795f;font-weight:700;margin-top:3px;display:inline-block}
+.toast{position:fixed;left:50%;bottom:calc(var(--navh) + 26px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--charcoal);color:var(--limestone);padding:11px 18px;border-radius:999px;font-size:13.5px;font-weight:600;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s;z-index:80}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(min-width:861px){.toast{bottom:26px}}
 </style>
 </head>
 <body>
@@ -175,8 +184,8 @@ padding:11px 14px;background:rgba(255,255,255,.92);backdrop-filter:blur(18px);-w
       <div class="dash-grid">
         <button class="tap" onclick="go('calculator')"><div class="ic"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8 7h8M8 11h2M14 11h2M8 15h2M14 15h2M8 18.5h2M14 18.5h2"/></svg></div><div class="tt">Calculator</div><div class="ds">Price per m² &amp; ft², instant quotes</div></button>
         <button class="tap" onclick="go('invoice')"><div class="ic"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h6M10 16h6M10 8h2"/></svg></div><div class="tt">Invoice</div><div class="ds">Editable, GST-ready, print to PDF</div></button>
-        <button class="tap" onclick="go('quotation')"><span class="soon">SOON</span><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 3z"/><path d="M9 9h8M9 12h5"/></svg></div><div class="tt">Quotations</div><div class="ds">Branded quotes that convert</div></button>
-        <button class="tap" onclick="go('customers')"><span class="soon">SOON</span><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 6a3 3 0 0 1 0 6M21 19a5 5 0 0 0-4-4.9"/></svg></div><div class="tt">Customers</div><div class="ds">Contacts &amp; project history</div></button>
+        <button class="tap" onclick="go('history')"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div><div class="tt">History</div><div class="ds">Past invoices, reopen anytime</div></button>
+        <button class="tap" onclick="go('customers')"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 6a3 3 0 0 1 0 6M21 19a5 5 0 0 0-4-4.9"/></svg></div><div class="tt">Customers</div><div class="ds">Saved contacts &amp; their invoices</div></button>
         <button class="tap full" onclick="go('settings')"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18 6l-1.6 1.6M7.6 16.4 6 18M18 18l-1.6-1.6M7.6 7.6 6 6"/></svg></div><div><div class="tt">Business settings</div><div class="ds">Company, bank &amp; default terms</div></div></button>
       </div>
     </section>
@@ -221,9 +230,7 @@ padding:11px 14px;background:rgba(255,255,255,.92);backdrop-filter:blur(18px);-w
 
     <section id="invoice" class="view">
       <div class="inline"><h1 class="title">Invoice</h1>
-        <div class="desk-actions"><button class="btn ghost sm" onclick="invNew()">New</button>
-          <button class="btn ghost sm" onclick="invPreview()">Preview</button>
-          <button class="btn primary sm" onclick="invPrint()">Print / PDF</button></div></div>
+        <div class="desk-actions"><button class="btn ghost sm" onclick="invNew()">New</button><button class="btn ghost sm" onclick="invCommit()">Save</button><button class="btn ghost sm" onclick="invPreview()">Preview</button><button class="btn primary sm" onclick="invPrint()">Print / PDF</button></div></div>
       <p class="lead">Fill in the details — totals calculate automatically. Saves as you type.</p>
       <div class="card"><h2>Customer</h2>
         <div class="field"><label>Name</label><input class="input" id="iName" placeholder="e.g. Ann"></div>
@@ -252,15 +259,18 @@ padding:11px 14px;background:rgba(255,255,255,.92);backdrop-filter:blur(18px);-w
         <p class="muted" style="margin-top:8px">Edit your defaults in Settings so every invoice starts pre-filled.</p></div>
     </section>
 
-    <section id="quotation" class="view"><h1 class="title">Quotations</h1>
-      <div class="card"><div class="placeholder"><div class="pic"><svg viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 3z"/><path d="M9 9h8M9 12h5"/></svg></div><h3>Quotation Generator</h3>
-        <p>Branded, itemised quotes with your terms — convert them to an invoice in one tap.</p>
-        <div class="chips"><span class="chip">Itemised</span><span class="chip">Convert to invoice</span><span class="chip">PDF export</span></div></div></div></section>
+    <section id="history" class="view"><h1 class="title">History</h1>
+      <p class="lead">Every saved invoice, newest first. Tap to reopen and edit.</p>
+      <div id="histList"></div></section>
 
-    <section id="customers" class="view"><h1 class="title">Customers</h1>
-      <div class="card"><div class="placeholder"><div class="pic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 6a3 3 0 0 1 0 6M21 19a5 5 0 0 0-4-4.9"/></svg></div><h3>Customer Database</h3>
-        <p>Save contacts, addresses and project history so invoices auto-fill.</p>
-        <div class="chips"><span class="chip">Contacts</span><span class="chip">Project history</span><span class="chip">Auto-fill</span></div></div></div></section>
+    <section id="customers" class="view">
+      <div id="custListView"><h1 class="title">Customers</h1>
+        <p class="lead">Grouped from your saved invoices. Tap a customer to see their jobs.</p>
+        <input class="input" id="custSearch" placeholder="Search name or phone" style="margin-bottom:14px">
+        <div id="custList"></div></div>
+      <div id="custDetailView" style="display:none">
+        <button class="btn ghost sm" onclick="custBack()" style="margin-bottom:14px">‹ All customers</button>
+        <div id="custDetail"></div></div></section>
 
     <section id="settings" class="view"><h1 class="title">Settings</h1>
       <p class="lead">Your business profile — used to pre-fill invoices and quotes.</p>
@@ -289,7 +299,7 @@ padding:11px 14px;background:rgba(255,255,255,.92);backdrop-filter:blur(18px);-w
 </div>
 <div class="actionbar" id="invBar">
   <button class="btn ghost" onclick="invAddItem()">+ Item</button>
-  <button class="btn ghost" onclick="invSaveFlash()">Save</button>
+  <button class="btn ghost" onclick="invCommit()">Save</button>
   <button class="btn dark" onclick="invPreview()">Preview</button>
   <button class="btn primary" onclick="invPrint()">Print</button>
 </div>
@@ -314,14 +324,15 @@ dashboard:'<svg viewBox="0 0 24 24"><path d="M4 13h7V4H4v9Zm0 7h7v-5H4v5Zm9 0h7v
 calculator:'<svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8 7h8M8 11h2M14 11h2M8 15h2M14 15h2M8 18.5h2M14 18.5h2"/></svg>',
 invoice:'<svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h6M10 16h6M10 8h2"/></svg>',
 quote:'<svg viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 3z"/><path d="M9 9h8M9 12h5"/></svg>',
+history:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
 users:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 6a3 3 0 0 1 0 6M21 19a5 5 0 0 0-4-4.9"/></svg>',
 gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18 6l-1.6 1.6M7.6 16.4 6 18M18 18l-1.6-1.6M7.6 7.6 6 6"/></svg>',
 print:'<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:1.8"><path d="M7 9V3h10v6M7 18H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M7 14h10v7H7z"/></svg>'};
 
 /* ---------- ROUTER ---------- */
-const NAV=[{id:"dashboard",label:"Home",icon:IC.dashboard},{id:"calculator",label:"Calc",icon:IC.calculator},{id:"invoice",label:"Invoice",icon:IC.invoice},{id:"quotation",label:"Quotes",icon:IC.quote},{id:"settings",label:"Settings",icon:IC.gear}];
-const SIDE=[NAV[0],NAV[1],NAV[2],{id:"quotation",label:"Quotations",icon:IC.quote},{id:"customers",label:"Customers",icon:IC.users},{id:"settings",label:"Settings",icon:IC.gear}];
-const TITLES={dashboard:"Dashboard",calculator:"Calculator",invoice:"Invoice",quotation:"Quotations",customers:"Customers",settings:"Settings"};
+const NAV=[{id:"dashboard",label:"Home",icon:IC.dashboard},{id:"calculator",label:"Calc",icon:IC.calculator},{id:"invoice",label:"Invoice",icon:IC.invoice},{id:"history",label:"History",icon:IC.history},{id:"settings",label:"Settings",icon:IC.gear}];
+const SIDE=[NAV[0],NAV[1],NAV[2],{id:"customers",label:"Customers",icon:IC.users},{id:"history",label:"History",icon:IC.history},{id:"settings",label:"Settings",icon:IC.gear}];
+const TITLES={dashboard:"Dashboard",calculator:"Calculator",invoice:"Invoice",history:"History",customers:"Customers",settings:"Settings"};
 function buildNav(){
   $("bottomNav").innerHTML=NAV.map(n=>`<button class="navitem" data-id="${n.id}" onclick="go('${n.id}')">${n.icon}<span>${n.label}</span></button>`).join("");
   $("sideNav").innerHTML=SIDE.map(n=>`<button class="side-item" data-id="${n.id}" onclick="go('${n.id}')">${n.icon}<span>${n.label}</span></button>`).join("");
@@ -330,7 +341,7 @@ function go(id){if(location.hash!=="#"+id)location.hash=id;else route();}
 function route(){const id=(location.hash||"#dashboard").slice(1);const v=TITLES[id]?id:"dashboard";
   document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id===v));
   document.querySelectorAll(".navitem,.side-item").forEach(b=>b.classList.toggle("active",b.dataset.id===v));
-  $("topTitle").textContent=TITLES[v];$("invBar").classList.toggle("show",v==="invoice");window.scrollTo(0,0);}
+  $("topTitle").textContent=TITLES[v];$("invBar").classList.toggle("show",v==="invoice");if(v==="customers")renderCustomers();if(v==="history")renderHistory();window.scrollTo(0,0);}
 window.go=go;window.addEventListener("hashchange",route);
 
 /* ---------- CALCULATOR ---------- */
@@ -510,6 +521,55 @@ function closePreview(){$("previewOverlay").classList.remove("show");}
 function invPrint(){buildPrint();closePreview();setTimeout(()=>window.print(),80);}
 window.invPreview=invPreview;window.closePreview=closePreview;window.invPrint=invPrint;
 
+/* ---------- RECORDS: invoice history + customers ---------- */
+const LISTKEY="sgm_invoices_list_v1";
+function recList(){return store.get(LISTKEY,[]);}
+function recSaveAll(l){store.set(LISTKEY,l);}
+function money2(n){return "$"+(isFinite(n)?n:0).toLocaleString("en-SG",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtDate(ts){try{return new Date(ts).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});}catch(e){return "";}}
+function invTotalOf(d){const sub=d.items.reduce((a,it)=>a+num(it.a),0);return sub+(d.gstOn?sub*(d.gstRate||0)/100:0);}
+function invCommit(){
+  const list=recList();const total=invTotalOf(inv);
+  if(!inv.rid)inv.rid="r"+Date.now();
+  const rec={rid:inv.rid,no:inv.no,date:inv.date,name:inv.name,phone:inv.phone,addr:inv.addr,total:total,savedAt:Date.now(),data:JSON.parse(JSON.stringify(inv))};
+  const idx=list.findIndex(r=>r.rid===rec.rid);
+  if(idx>=0)list[idx]=rec;else list.unshift(rec);
+  recSaveAll(list);invSave();toast(idx>=0?"Invoice updated \u2713":"Saved to history \u2713");
+}
+window.invCommit=invCommit;
+function invOpen(rid){const r=recList().find(x=>x.rid===rid);if(!r)return;inv=JSON.parse(JSON.stringify(r.data));inv.rid=r.rid;invSave();invRenderItems();invBind();go('invoice');}
+window.invOpen=invOpen;
+function recDelete(rid){if(!confirm("Delete this saved invoice? This cannot be undone."))return;recSaveAll(recList().filter(r=>r.rid!==rid));renderHistory();renderCustomers();}
+window.recDelete=recDelete;
+function emptyState(t,s){return '<div class="card"><div class="placeholder" style="padding:42px 20px"><div class="pic">'+IC.invoice+'</div><h3>'+t+'</h3><p>'+s+'</p></div></div>';}
+function recRow(r){return '<button class="listrow" onclick="invOpen(\''+r.rid+'\')"><div class="lr-main"><div class="lr-t">'+esc(r.name||"(no name)")+'</div><div class="lr-s">'+esc(r.no)+' \u00b7 '+esc(r.date||fmtDate(r.savedAt))+'</div></div><div class="lr-r"><div class="lr-amt">'+money2(r.total)+'</div><span class="lr-del" onclick="event.stopPropagation();recDelete(\''+r.rid+'\')">Delete</span></div></button>';}
+function renderHistory(){const box=$("histList");if(!box)return;const list=recList();
+  box.innerHTML=list.length?('<div class="card" style="padding:6px 4px">'+list.map(recRow).join("")+'</div>'):emptyState("No saved invoices yet","Open an invoice and tap Save to file it here.");}
+/* customers derived from saved invoices */
+function custKey(r){return (r.phone&&r.phone.trim())?("p:"+r.phone.replace(/\s/g,"")):("n:"+(r.name||"").trim().toLowerCase());}
+function custGroups(){const map={};recList().forEach(r=>{const k=custKey(r);if(!k||k==="n:")return;
+  if(!map[k])map[k]={key:k,name:r.name||"(no name)",phone:r.phone||"",addr:r.addr||"",count:0,total:0,last:0,invoices:[]};
+  const g=map[k];g.count++;g.total+=r.total||0;g.invoices.push(r);
+  if(r.savedAt>=g.last){g.last=r.savedAt;g.name=r.name||g.name;g.phone=r.phone||g.phone;g.addr=r.addr||g.addr;}});
+  return Object.values(map).sort((a,b)=>b.last-a.last);}
+function renderCustomers(){const box=$("custList");if(!box)return;custBack();
+  const q=($("custSearch")?$("custSearch").value:"").toLowerCase().trim();
+  let g=custGroups();if(q)g=g.filter(c=>(c.name+" "+c.phone).toLowerCase().includes(q));
+  box.innerHTML=g.length?('<div class="card" style="padding:6px 4px">'+g.map(c=>'<button class="listrow" onclick="custOpen(\''+c.key+'\')"><div class="lr-main"><div class="lr-t">'+esc(c.name)+'</div><div class="lr-s">'+esc(c.phone||"\u2014")+' \u00b7 '+c.count+' invoice'+(c.count>1?"s":"")+'</div></div><div class="lr-r"><div class="lr-amt">'+money2(c.total)+'</div><div class="lr-s">total billed</div></div></button>').join("")+'</div>'):emptyState(q?"No matches":"No customers yet",q?"Try another search.":"Saved invoices group into customers here automatically.");}
+function custOpen(key){const c=custGroups().find(x=>x.key===key);if(!c)return;
+  $("custListView").style.display="none";$("custDetailView").style.display="block";
+  $("custDetail").innerHTML='<h1 class="title">'+esc(c.name)+'</h1><p class="lead">'+esc(c.phone||"")+(c.addr?(" \u00b7 "+esc(c.addr)):"")+'</p>'+
+    '<div class="stats" style="margin-bottom:14px"><div class="stat"><div class="l">Invoices</div><div class="v">'+c.count+'</div></div><div class="stat"><div class="l">Total billed</div><div class="v" style="font-size:18px">'+money2(c.total)+'</div></div></div>'+
+    '<div class="card" style="padding:6px 4px">'+c.invoices.slice().sort((a,b)=>b.savedAt-a.savedAt).map(recRow).join("")+'</div>'+
+    '<button class="btn block ghost" style="margin-top:12px" onclick="custNewFor(\''+c.key+'\')">+ New invoice for this customer</button>';}
+window.custOpen=custOpen;
+function custBack(){const lv=$("custListView"),dv=$("custDetailView");if(lv&&dv){lv.style.display="block";dv.style.display="none";}}
+window.custBack=custBack;
+function custNewFor(key){const c=custGroups().find(x=>x.key===key);if(!c)return;const prev=inv&&inv.no;inv=blankInvoice();inv.no=nextNo(prev);inv.name=c.name;inv.phone=c.phone;inv.addr=c.addr;invRenderItems();invBind();invSave();go('invoice');}
+window.custNewFor=custNewFor;
+function toast(msg){let el=$("toast");if(!el){el=document.createElement("div");el.id="toast";el.className="toast";document.body.appendChild(el);}el.textContent=msg;el.classList.add("show");clearTimeout(window._tt);window._tt=setTimeout(()=>el.classList.remove("show"),2000);}
+window.toast=toast;
+
 /* ---------- BOOT ---------- */
 function boot(){
   buildNav();
@@ -524,6 +584,7 @@ function boot(){
   genQuote();
   // settings + invoice
   fillSettings();
+  if($("custSearch"))$("custSearch").addEventListener("input",renderCustomers);
   invLoad();invRenderItems();invBind();
   // router
   route();
