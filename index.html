@@ -166,7 +166,15 @@ padding:11px 14px;background:rgba(255,255,255,.92);backdrop-filter:blur(18px);-w
 @media(min-width:861px){.toast{bottom:26px}}
 
 /* ── Targets page ── */
-.quote-block{background:linear-gradient(135deg,var(--ink) 0%,#3d3830 100%);border-radius:18px;padding:22px 20px 20px;text-align:center}
+.quote-block{
+  background:linear-gradient(145deg,#16110d 0%,#2a1f17 45%,#1a1310 100%);
+  border-radius:20px;
+  padding:30px 22px 26px;
+  text-align:center;
+  border:1px solid rgba(200,169,124,0.22);
+  box-shadow:0 6px 32px rgba(0,0,0,0.35),inset 0 1px 0 rgba(200,169,124,0.12);
+  position:relative;
+  overflow:hidden;}
 .progress-track{background:var(--line,#e8e3db);border-radius:10px;height:14px;overflow:hidden;margin:10px 0 6px;position:relative}
 .progress-fill{height:100%;border-radius:10px;transition:width 1.1s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}
 .progress-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 20%,rgba(255,255,255,.3) 50%,transparent 80%);animation:pshimmer 2.2s infinite}
@@ -366,6 +374,29 @@ padding:11px 14px;background:rgba(255,255,255,.92);backdrop-filter:blur(18px);-w
         </div>
         <div id="presetMgmtMsg" class="muted" style="text-align:center;margin-top:10px;min-height:16px;font-size:13px"></div>
       </div>
+      <!-- Change password card — visible to all roles -->
+      <div class="card" id="changePwSettingsCard" style="margin-top:4px">
+        <h2>Change Password</h2>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;margin-top:10px;">
+          <div>
+            <label class="label">Current Password</label>
+            <input id="spCurrPw" type="password" class="input" placeholder="Your current password">
+          </div>
+          <div>
+            <label class="label">New Password</label>
+            <input id="spNewPw" type="password" class="input" placeholder="At least 4 characters">
+          </div>
+          <div>
+            <label class="label">Confirm New Password</label>
+            <input id="spConfPw" type="password" class="input" placeholder="Repeat new password"
+              onkeydown="if(event.key==='Enter')settingsChangePw()">
+          </div>
+          <p id="spPwErr" style="margin:0;color:#ef4444;font-size:0.82rem;min-height:1em;"></p>
+          <p id="spPwOk" style="margin:0;color:#22c55e;font-size:0.82rem;min-height:1em;"></p>
+          <button class="btn primary block" onclick="settingsChangePw()">Update Password</button>
+        </div>
+      </div>
+
       <div class="muted" style="text-align:center;margin-bottom:8px">SGM Business Suite · v1.0 · data saved on this device</div></section>
 
     <section id="users" class="view"><h1 class="title">Users</h1>
@@ -427,10 +458,29 @@ padding:11px 14px;background:rgba(255,255,255,.92);backdrop-filter:blur(18px);-w
       <h1 class="title">Targets</h1>
 
       <!-- Rotating motivational quote -->
-      <div class="quote-block" style="margin-bottom:20px">
-        <div style="font-size:36px;line-height:1;color:var(--oak,#C8A97C);margin-bottom:6px;font-family:Georgia,serif">&ldquo;</div>
-        <div id="quoteText" style="font-size:17px;font-weight:600;line-height:1.55;font-style:italic;color:var(--limestone,#F4EFE7);transition:opacity .45s ease;min-height:56px"></div>
-        <div id="quoteAuthor" style="font-size:12px;color:var(--oak,#C8A97C);margin-top:10px;font-weight:500;letter-spacing:.04em;transition:opacity .45s ease"></div>
+      <div class="quote-block" style="margin-bottom:22px">
+        <!-- decorative open-quote -->
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:clamp(64px,16vw,90px);line-height:0.6;color:rgba(200,169,124,0.55);margin-bottom:14px;user-select:none;">&ldquo;</div>
+        <div id="quoteText"
+          style="font-family:Georgia,'Times New Roman',serif;
+                 font-size:clamp(18px,4.6vw,26px);
+                 font-weight:400;
+                 font-style:italic;
+                 line-height:1.65;
+                 color:#F4EFE7;
+                 letter-spacing:0.01em;
+                 transition:opacity .5s ease;
+                 min-height:72px;
+                 padding:0 4px;"></div>
+        <div id="quoteAuthor"
+          style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+                 font-size:clamp(11px,3vw,13px);
+                 font-weight:600;
+                 letter-spacing:.1em;
+                 text-transform:uppercase;
+                 color:rgba(200,169,124,0.85);
+                 margin-top:16px;
+                 transition:opacity .5s ease;"></div>
       </div>
 
       <!-- Progress cards -->
@@ -512,6 +562,7 @@ async function doLogin(){
   if(!found){document.getElementById("loginErr").textContent="Incorrect username or password.";return;}
   setSession({id:found.id,username:found.username,role:found.role});
   hideLoginScreen();
+  if(found.mustChangePassword){showForcedPwChange();return;}
   launchApp();}
 
 document.addEventListener("keydown",e=>{
@@ -526,7 +577,7 @@ async function ensureAdminExists(){
   const users=getUsers();
   if(users.find(x=>x.id==="admin"))return;
   const h=await sha256("admin1234");
-  saveUsers2([{id:"admin",username:"admin",passwordHash:h,role:"admin",createdAt:new Date().toISOString()}]);}
+  saveUsers2([{id:"admin",username:"admin",passwordHash:h,role:"admin",mustChangePassword:true,createdAt:new Date().toISOString()}]);}
 
 /* ---------- users management (admin) ---------- */
 /* role badge helper */
@@ -661,7 +712,7 @@ async function createUser(){
   if(users.find(x=>x.username.toLowerCase()===name.toLowerCase())){errEl.textContent="Username already taken.";return;}
   const h=await sha256(pass);
   const id="u_"+Date.now();
-  users.push({id,username:name,passwordHash:h,role:"sales",createdAt:new Date().toISOString()});
+  users.push({id,username:name,passwordHash:h,role:"sales",mustChangePassword:true,createdAt:new Date().toISOString()});
   saveUsers2(users);
   document.getElementById("addUserForm").style.display="none";
   document.getElementById("nuName").value="";document.getElementById("nuPass").value="";errEl.textContent="";
@@ -1341,18 +1392,26 @@ function launchApp(){
    ══════════════════════════════════════════════════ */
 const TARGET_KEY='sgm_targets_v1';
 const SALES_QUOTES=[
-  {q:"Every no gets you one step closer to a yes.",a:""},
-  {q:"Success is the sum of small efforts, repeated day in and day out.",a:"Robert Collier"},
-  {q:"Don't watch the clock — do what it does. Keep going.",a:"Sam Levenson"},
-  {q:"Champions keep playing until they get it right.",a:"Billie Jean King"},
-  {q:"The harder the battle, the sweeter the victory.",a:""},
-  {q:"Your attitude, not your aptitude, will determine your altitude.",a:"Zig Ziglar"},
-  {q:"A goal is a dream with a deadline.",a:"Napoleon Hill"},
-  {q:"Push yourself, because no one else is going to do it for you.",a:""},
-  {q:"Small daily wins build big monthly results. Make today count.",a:""},
+  {q:"You don’t close a sale — you open a relationship.",a:"Patricia Fripp"},
+  {q:"Make a customer, not a sale.",a:"Katherine Barchetti"},
+  {q:"People don’t buy what you do; they buy why you do it.",a:"Simon Sinek"},
+  {q:"Selling is essentially a transfer of feelings.",a:"Zig Ziglar"},
+  {q:"Either you run the day, or the day runs you.",a:"Jim Rohn"},
   {q:"The secret of getting ahead is getting started.",a:"Mark Twain"},
-  {q:"Believe you can and you're halfway there.",a:"Theodore Roosevelt"},
-  {q:"It always seems impossible until it's done.",a:"Nelson Mandela"},
+  {q:"Go the extra mile. It’s never crowded there.",a:"Wayne Dyer"},
+  {q:"Your attitude, not your aptitude, will determine your altitude.",a:"Zig Ziglar"},
+  {q:"I never lose. I either win or learn.",a:"Nelson Mandela"},
+  {q:"Work like there is someone working 24 hours a day to take it all away from you.",a:"Mark Cuban"},
+  {q:"Success is not final, failure is not fatal — it is the courage to continue that counts.",a:"Winston Churchill"},
+  {q:"Motivation is what gets you started. Habit is what keeps you going.",a:"Jim Rohn"},
+  {q:"You miss 100% of the shots you don’t take.",a:"Wayne Gretzky"},
+  {q:"The most effective salespeople know that listening is the most important part of their job.",a:"Roy Bartell"},
+  {q:"In the middle of every difficulty lies opportunity.",a:"Albert Einstein"},
+  {q:"Don’t watch the clock — do what it does. Keep going.",a:"Sam Levenson"},
+  {q:"Timid salespeople have skinny kids. Be bold. Be relentless.",a:"Zig Ziglar"},
+  {q:"A goal properly set is halfway reached.",a:"Zig Ziglar"},
+  {q:"The harder you work, the luckier you get.",a:"Gary Player"},
+  {q:"It always seems impossible until it’s done.",a:"Nelson Mandela"},
 ];
 
 function monthlySales(uid){
@@ -1476,6 +1535,49 @@ async function boot(){
   showLoginScreen();}
 
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
+
+// ── Forced first-login password change ──────────────────────────────────────
+function showForcedPwChange(){
+  const ov=document.getElementById("changePwOverlay");
+  ov.style.display="flex";
+  setTimeout(()=>document.getElementById("cpNewPw").focus(),50);}
+async function submitForcedPwChange(){
+  const np=document.getElementById("cpNewPw").value;
+  const cp=document.getElementById("cpConfPw").value;
+  const err=document.getElementById("cpErr");
+  if(np.length<4){err.textContent="Password must be at least 4 characters.";return;}
+  if(np!==cp){err.textContent="Passwords do not match.";return;}
+  const h=await sha256(np);
+  const users=getUsers();
+  const u=users.find(x=>x.id===currentUser.id);
+  if(!u){err.textContent="User not found — please contact admin.";return;}
+  u.passwordHash=h;
+  u.mustChangePassword=false;
+  saveUsers2(users);
+  document.getElementById("changePwOverlay").style.display="none";
+  launchApp();}
+
+// ── Change password from Settings ───────────────────────────────────────────
+async function settingsChangePw(){
+  const curr=document.getElementById("spCurrPw").value;
+  const np=document.getElementById("spNewPw").value;
+  const cp=document.getElementById("spConfPw").value;
+  const err=document.getElementById("spPwErr");
+  const ok=document.getElementById("spPwOk");
+  err.textContent="";ok.textContent="";
+  if(!curr){err.textContent="Enter your current password.";return;}
+  if(np.length<4){err.textContent="New password must be at least 4 characters.";return;}
+  if(np!==cp){err.textContent="Passwords do not match.";return;}
+  const currH=await sha256(curr);
+  const users=getUsers();
+  const u=users.find(x=>x.id===currentUser.id);
+  if(!u||u.passwordHash!==currH){err.textContent="Current password is incorrect.";return;}
+  u.passwordHash=await sha256(np);
+  saveUsers2(users);
+  document.getElementById("spCurrPw").value="";
+  document.getElementById("spNewPw").value="";
+  document.getElementById("spConfPw").value="";
+  ok.textContent="\u2713 Password updated successfully!";}
 </script>
 
 <!-- Preset quick-add sheet -->
@@ -1487,6 +1589,40 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
       <button onclick="hidePresetSheet()" aria-label="Close">×</button>
     </div>
     <div id="presetList"></div>
+  </div>
+</div>
+
+<!-- Forced first-login password change overlay -->
+<div id="changePwOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.75);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:2rem 2rem 1.5rem;width:min(92%,420px);box-shadow:0 12px 48px rgba(0,0,0,0.25);">
+    <div style="text-align:center;margin-bottom:1.25rem;">
+      <div style="font-size:2.5rem;margin-bottom:0.5rem;">\U0001f510</div>
+      <h2 style="margin:0 0 0.4rem;color:#1e293b;font-size:1.2rem;font-weight:700;">Set Your Password</h2>
+      <p style="margin:0;color:#64748b;font-size:0.875rem;">Welcome! Please create a new password before continuing.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:0.65rem;">
+      <div>
+        <label style="display:block;font-size:0.78rem;font-weight:600;color:#475569;margin-bottom:4px;letter-spacing:.03em;">NEW PASSWORD</label>
+        <input id="cpNewPw" type="password" placeholder="At least 4 characters"
+          style="width:100%;box-sizing:border-box;padding:11px 13px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:0.95rem;outline:none;transition:border .15s;"
+          onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#cbd5e1'"
+          oninput="document.getElementById('cpErr').textContent=''"
+          onkeydown="if(event.key==='Enter')document.getElementById('cpConfPw').focus()">
+      </div>
+      <div>
+        <label style="display:block;font-size:0.78rem;font-weight:600;color:#475569;margin-bottom:4px;letter-spacing:.03em;">CONFIRM PASSWORD</label>
+        <input id="cpConfPw" type="password" placeholder="Repeat new password"
+          style="width:100%;box-sizing:border-box;padding:11px 13px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:0.95rem;outline:none;transition:border .15s;"
+          onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#cbd5e1'"
+          oninput="document.getElementById('cpErr').textContent=''"
+          onkeydown="if(event.key==='Enter')submitForcedPwChange()">
+      </div>
+      <p id="cpErr" style="margin:0;color:#ef4444;font-size:0.825rem;min-height:1.1em;"></p>
+      <button onclick="submitForcedPwChange()"
+        style="width:100%;padding:12px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.01em;margin-top:2px;">
+        Set Password &amp; Continue &#8594;
+      </button>
+    </div>
   </div>
 </div>
 </body>
