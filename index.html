@@ -885,8 +885,21 @@ const IKEY="sgm_invoice_v2";
 let inv=null;
 function num(a){if(a==null)return 0;const v=parseFloat((""+a).replace(/[^0-9.\-]/g,""));return isNaN(v)?0:v;}
 function todayStr(){return new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});}
-function nextNo(prev){if(!prev)return "SGMC-MY-088025";return prev.replace(/(\d+)(?!.*\d)/,m=>String(+m+1).padStart(m.length,"0"));}
-function blankInvoice(){const s=getSettings();return{name:"",phone:"",addr:"",no:"SGMC-MY-088025",date:todayStr(),
+/* ── Invoice auto-numbering ── */
+const INV_SEQ_KEY="sgm_inv_seq_v1";
+function userInitials(){
+  if(!currentUser)return"XX";
+  const parts=currentUser.username.trim().split(/\s+/);
+  if(parts.length>=2)return(parts[0][0]+(parts[parts.length-1][0])).toUpperCase();
+  return parts[0].slice(0,2).toUpperCase();}
+function nextInvNo(){
+  const ini=userInitials();
+  const seq=store.get(userKey(INV_SEQ_KEY),101000);
+  store.set(userKey(INV_SEQ_KEY),seq+1);
+  return"SGMC-"+ini+"-"+seq;}
+// Legacy helper — kept for any direct calls
+function nextNo(prev){return nextInvNo();}
+function blankInvoice(){const s=getSettings();return{name:"",phone:"",addr:"",no:nextInvNo(),date:todayStr(),
   items:[{d:"Provide labour and materials to overlay floor and wall with micro cement",a:""},{d:"Provide labour and materials to overlay ceiling with micro cement",a:"FOC"}],
   gstOn:true,gstRate:s.gst,warrOn:true,warrDur:s.warr,warrCov:"Crack & Mould",warrStart:"",pay:s.pay,tc:s.tc};}
 function invLoad(){inv=store.get(userKey(IKEY))||blankInvoice();}
@@ -912,7 +925,7 @@ function invBind(){const map={iName:"name",iPhone:"phone",iNo:"no",iAddr:"addr",
   $("iWarrOn").onchange=()=>{inv.warrOn=$("iWarrOn").checked;invSave();};
   requestAnimationFrame(()=>{grow($("iPay"));grow($("iTc"));});}
 function invNew(){if(!confirm("Start a new invoice? Saved settings (company, bank, terms) are kept."))return;
-  const prev=inv&&inv.no;inv=blankInvoice();inv.no=nextNo(prev);invRenderItems();invBind();invSave();invSaveFlash();}
+  inv=blankInvoice();invRenderItems();invBind();invSave();invSaveFlash();}
 window.invNew=invNew;
 let _ifl;function invSaveFlash(){invSave();const bar=$("invBar");bar.style.opacity=".6";clearTimeout(_ifl);_ifl=setTimeout(()=>bar.style.opacity="1",180);}
 window.invSaveFlash=invSaveFlash;
